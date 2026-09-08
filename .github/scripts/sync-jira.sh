@@ -18,6 +18,31 @@ adf_body() {
 existing_key=$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json labels -q '.labels[].name' \
   | grep '^jira-' | sed 's/^jira-//' | head -n1 || true)
 
+# 연결된 Jira 이슈를 지정한 상태(status 이름)로 전환. 실패해도 워크플로우 전체를 죽이지 않음
+transition_to() {
+  local key="$1" target_status="$2"
+
+  local transitions
+  transitions=$(curl -sf -H "Authorization: Basic $JIRA_AUTH" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$key/transitions")
+
+  local transition_id
+  transition_id=$(echo "$transitions" \
+    | jq -r --arg name "$target_status" '.transitions[] | select(.name==$name) | .id' | head -n1)
+
+  if [ -z "$transition_id" ] || [ "$transition_id" = "null" ]; then
+    echo "'$target_status' 상태로 가는 transition을 찾지 못했습니다. Jira 워크플로우 상태명을 확인하세요."
+    return 0
+  fi
+
+  curl -sf -X POST \
+    -H "Authorization: Basic $JIRA_AUTH" \
+    -H "Content-Type: application/json" \
+    --data "$(jq -n --arg id "$transition_id" '{transition: {id: $id}}')" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$key/transitions"
+  echo "$key 상태를 $target_status 로 전환했습니다."
+}
+
 case "$EVENT_ACTION" in
   opened)
     if [ -n "$existing_key" ]; then
@@ -80,23 +105,31 @@ case "$EVENT_ACTION" in
     target_status="Done"
     [ "$EVENT_ACTION" = "reopened" ] && target_status="To Do"
 
-    transitions=$(curl -sf -H "Authorization: Basic $JIRA_AUTH" \
-      "$JIRA_BASE_URL/rest/api/3/issue/$existing_key/transitions")
+    transition_to "$existing_key" "$target_status"
+    ;;
 
-    transition_id=$(echo "$transitions" \
-      | jq -r --arg name "$target_status" '.transitions[] | select(.name==$name) | .id' | head -n1)
-
-    if [ -z "$transition_id" ] || [ "$transition_id" = "null" ]; then
-      echo "'$target_status' 상태로 가는 transition을 찾지 못했습니다. Jira 워크플로우 상태명을 확인하세요."
+  labeled | unlabeled)
+    # 우리가 붙이는 "jira-XXX-123" 라벨 자체는 무시 (무한루프/오작동 방지)
+    if [[ "$LABEL_NAME" == jira-* ]]; then
+      echo "jira-* 라벨 이벤트는 무시합니다."
       exit 0
     fi
 
-    curl -sf -X POST \
-      -H "Authorization: Basic $JIRA_AUTH" \
-      -H "Content-Type: application/json" \
-      --data "$(jq -n --arg id "$transition_id" '{transition: {id: $id}}')" \
-      "$JIRA_BASE_URL/rest/api/3/issue/$existing_key/transitions"
-    echo "$existing_key 상태를 $target_status 로 전환했습니다."
+    if [ -z "$existing_key" ]; then
+      echo "연결된 Jira 이슈가 없어 상태 전환을 건너뜁니다."
+      exit 0
+    fi
+
+    if [ "$LABEL_NAME" != "in-progress" ]; then
+      echo "'in-progress' 라벨이 아니라서(${LABEL_NAME}) 건너뜁니다."
+      exit 0
+    fi
+
+    if [ "$EVENT_ACTION" = "labeled" ]; then
+      transition_to "$existing_key" "In Progress"
+    else
+      transition_to "$existing_key" "To Do"
+    fi
     ;;
 
   *)

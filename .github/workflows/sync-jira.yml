@@ -2,7 +2,7 @@ name: Sync GitHub Issues to Jira
 
 on:
   issues:
-    types: [opened, edited, closed, reopened]
+    types: [opened, edited, closed, reopened, labeled, unlabeled]
 
 permissions:
   issues: write
@@ -28,4 +28,5 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
           EVENT_ACTION: ${{ github.event.action }}
+          LABEL_NAME: ${{ github.event.label.name }}
         run: bash .github/scripts/sync-jira.sh

@@ -24,9 +24,18 @@ GitHub Issues와 Jira Issues는 완전히 별개 트래커이기 때문에, 이 
 | `edited` | 라벨에서 연결된 Jira 키를 찾아 제목/본문(summary/description) 업데이트 |
 | `closed` | 연결된 Jira 이슈를 **"Done"** 상태로 전환 |
 | `reopened` | 연결된 Jira 이슈를 **"To Do"** 상태로 전환 |
+| `labeled`(`in-progress`) | 연결된 Jira 이슈를 **"In Progress"** 상태로 전환 |
+| `unlabeled`(`in-progress`) | 연결된 Jira 이슈를 **"To Do"** 상태로 전환 |
 
 이미 생성된 이슈인지는 GitHub 이슈에 붙은 `jira-<KEY>` 라벨로 판별합니다
 (같은 이슈에 대해 Jira 이슈가 중복 생성되지 않도록 하기 위함).
+
+### 진행중 표시 (In Progress)
+
+GitHub **Projects 보드의 컬럼 이동은 Actions 트리거로 감지할 수 없어서**, 대신 라벨로 진행 상태를
+표시합니다. 이슈에 `in-progress` 라벨을 **붙이면** Jira가 "In Progress"로, **떼면** "To Do"로
+전환됩니다. (워크플로우 자신이 붙이는 `jira-<KEY>` 라벨 이벤트는 무시하도록 처리되어 있어
+무한루프나 오작동은 없습니다.)
 
 ## 사전 준비: GitHub Secrets 등록
 
