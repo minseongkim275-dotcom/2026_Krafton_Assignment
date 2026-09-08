@@ -32,7 +32,11 @@
 - target > root.value → 오른쪽으로 이동
 - target == root.value → 찾음!
 """
-
+class TreeNode:
+    def __init__(self,value):
+        self.value = value
+        self.left = None
+        self.right = None
 class TreeNode:
     def __init__(self, value):
         self.value = value
