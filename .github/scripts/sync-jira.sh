@@ -108,28 +108,26 @@ case "$EVENT_ACTION" in
     transition_to "$existing_key" "$target_status"
     ;;
 
-  labeled | unlabeled)
-    # 우리가 붙이는 "jira-XXX-123" 라벨 자체는 무시 (무한루프/오작동 방지)
-    if [[ "$LABEL_NAME" == jira-* ]]; then
-      echo "jira-* 라벨 이벤트는 무시합니다."
-      exit 0
-    fi
+  labeled)
+    # 라벨 이름을 Jira 상태 이름으로 그대로 사용합니다. "To Do" / "In Progress" / "Done"
+    # 라벨을 붙이면 그 이름 그대로 Jira 상태 전환을 시도합니다. (우리가 붙이는 "jira-XXX-123"
+    # 라벨이나 그 외 라벨(bug, enhancement 등)은 무시)
+    case "$LABEL_NAME" in
+      "To Do" | "In Progress" | "Done")
+        if [ -z "$existing_key" ]; then
+          echo "연결된 Jira 이슈가 없어 상태 전환을 건너뜁니다."
+          exit 0
+        fi
+        transition_to "$existing_key" "$LABEL_NAME"
+        ;;
+      *)
+        echo "상태 라벨이 아니라서 건너뜁니다: $LABEL_NAME"
+        ;;
+    esac
+    ;;
 
-    if [ -z "$existing_key" ]; then
-      echo "연결된 Jira 이슈가 없어 상태 전환을 건너뜁니다."
-      exit 0
-    fi
-
-    if [ "$LABEL_NAME" != "in-progress" ]; then
-      echo "'in-progress' 라벨이 아니라서(${LABEL_NAME}) 건너뜁니다."
-      exit 0
-    fi
-
-    if [ "$EVENT_ACTION" = "labeled" ]; then
-      transition_to "$existing_key" "In Progress"
-    else
-      transition_to "$existing_key" "To Do"
-    fi
+  unlabeled)
+    echo "라벨 제거는 별도 처리하지 않습니다 (다른 상태 라벨을 붙이면 그걸로 전환됩니다)."
     ;;
 
   *)

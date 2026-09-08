@@ -24,18 +24,25 @@ GitHub Issues와 Jira Issues는 완전히 별개 트래커이기 때문에, 이 
 | `edited` | 라벨에서 연결된 Jira 키를 찾아 제목/본문(summary/description) 업데이트 |
 | `closed` | 연결된 Jira 이슈를 **"Done"** 상태로 전환 |
 | `reopened` | 연결된 Jira 이슈를 **"To Do"** 상태로 전환 |
-| `labeled`(`in-progress`) | 연결된 Jira 이슈를 **"In Progress"** 상태로 전환 |
-| `unlabeled`(`in-progress`) | 연결된 Jira 이슈를 **"To Do"** 상태로 전환 |
+| `labeled` (`To Do`/`In Progress`/`Done`) | 연결된 Jira 이슈를 **라벨과 같은 이름의 상태**로 전환 |
 
 이미 생성된 이슈인지는 GitHub 이슈에 붙은 `jira-<KEY>` 라벨로 판별합니다
 (같은 이슈에 대해 Jira 이슈가 중복 생성되지 않도록 하기 위함).
 
-### 진행중 표시 (In Progress)
+### 진행 상태 표시 (To Do / In Progress / Done)
 
 GitHub **Projects 보드의 컬럼 이동은 Actions 트리거로 감지할 수 없어서**, 대신 라벨로 진행 상태를
-표시합니다. 이슈에 `in-progress` 라벨을 **붙이면** Jira가 "In Progress"로, **떼면** "To Do"로
-전환됩니다. (워크플로우 자신이 붙이는 `jira-<KEY>` 라벨 이벤트는 무시하도록 처리되어 있어
-무한루프나 오작동은 없습니다.)
+표시합니다. 저장소에 `To Do`, `In Progress`, `Done` 라벨을 만들어두고(대소문자·띄어쓰기까지 정확히
+Jira 상태 이름과 동일하게), 이슈에 그 중 하나를 **붙이면** Jira 이슈가 같은 이름의 상태로 자동
+전환됩니다. 라벨 이름을 그대로 Jira 상태 이름으로 사용하기 때문에 별도 매핑 설정이 필요 없습니다.
+
+라벨을 뗄 때(`unlabeled`)는 별도 동작을 하지 않습니다 — 보드에서 카드를 옮기듯 다른 상태 라벨을
+새로 붙이면 그걸로 전환되는 방식이라, 하나를 떼고 다른 하나를 붙이는 두 이벤트 중 "붙이는" 쪽만
+반영하면 충분합니다. (워크플로우 자신이 붙이는 `jira-<KEY>` 라벨이나 그 외 라벨(`bug`, `enhancement`
+등)은 무시하도록 처리되어 있어 오작동 걱정 없습니다.)
+
+> ⚠️ Jira 프로젝트의 실제 상태 이름이 `To Do`/`In Progress`/`Done`과 다르면(예: 한글화되어 있거나
+> 커스텀 워크플로우인 경우), GitHub 라벨 이름도 그 이름과 정확히 맞춰서 만들어야 합니다.
 
 ## 사전 준비: GitHub Secrets 등록
 
