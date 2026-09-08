@@ -43,6 +43,8 @@ case "$EVENT_ACTION" in
     key=$(echo "$response" | jq -r '.key')
     echo "Jira 이슈 생성됨: $key"
 
+    gh label create "jira-$key" --repo "$REPO" --color "0052CC" \
+      --description "Linked Jira issue $key" --force
     gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-label "jira-$key"
     gh issue comment "$ISSUE_NUMBER" --repo "$REPO" \
       --body "🔗 연결된 Jira 이슈: $JIRA_BASE_URL/browse/$key"
