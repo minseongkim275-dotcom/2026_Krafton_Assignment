@@ -2,7 +2,7 @@
 
 GitHub Issue를 생성/수정/닫으면 자동으로 Jira 이슈를 생성·갱신·상태전환 해주는 워크플로우입니다.
 
-## 왜 필요한가
+### 왜 필요한가
 
 Jira Cloud용 **GitHub for Jira** 앱은 커밋/브랜치/PR을 Jira 이슈의 "Development" 패널에
 연결해줄 뿐, **GitHub Issues 자체를 Jira 이슈로 옮기거나 동기화하는 기능은 없습니다.**
