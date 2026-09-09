@@ -1,0 +1,21 @@
+=== 팰린드롬 판별 ===
+'A man, a plan, a canal: Panama' -> True
+'racecar' -> True
+'hello' -> False
+'' -> True
+'Was it a car or a cat I saw?' -> True
+'0P' -> False
+
+=== 문자열 압축 (RLE) ===
+'aabcccccaaa' -> 'a2b1c5a3'
+'abc' -> 'abc'
+'aabb' -> 'aabb'
+'a' -> 'a'
+'' -> ''
+'aaabbbcccd' -> 'a3b3c3d1'
+
+=== 단어 순서 뒤집기 ===
+'the sky is blue' -> 'blue is sky the'
+'  hello   world  ' -> 'world hello'
+'python' -> 'python'
+'  a  ' -> 'a'
