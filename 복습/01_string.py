@@ -30,18 +30,51 @@
 
 
 def is_palindrome(s):
+    str_list = ""
+    for i in s:
+        if i.isalnum():
+            str_list+= i.lower()
+    for i in range(len(str_list)//2):
+        if str_list[i] == str_list[len(str_list)-i-1]:
+            continue
+        else:
+            return False
+    return True
+    
+
+
+
+
     # TODO: 영숫자만 남기고 소문자로 변환
     # TODO: 투 포인터로 양끝에서 비교
     pass
 
 
 def compress(s):
+    if len(s)== 0 or len(s) == 1:
+        return s
+    i = 0
+    str_list = ""
+    while len(s) > i+1 :
+        count = 0
+        while i + 1 < len(s) and s[i] == s[i+1]:
+            count += 1
+            i += 1
+        count += 1
+        str_list += s[i]
+        i += 1
+        str_list += str(count)
+    if len(str_list) < len(s):
+        return str_list
+    return s    
     # TODO: 같은 문자가 몇 번 연속되는지 세면서 (문자 + 개수)를 모은다
     # TODO: 압축본이 원본보다 짧을 때만 압축본을 반환
     pass
 
 
 def reverse_words(s):
+    return ' '.join(reversed(s.split()))
+
     # TODO: split 으로 단어를 나누고, 뒤집어서 공백 하나로 join
     pass
 
