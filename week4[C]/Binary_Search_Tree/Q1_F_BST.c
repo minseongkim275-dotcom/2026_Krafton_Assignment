@@ -32,7 +32,6 @@ typedef struct _queue
 }Queue; // You should not change the definition of queue
 
 ///////////////////////////////////////////////////////////////////////////////////
-
 // You should not change the prototypes of these functions
 void levelOrderTraversal(BSTNode *node);
 

@@ -1,0 +1,4 @@
+.claude-scripts/
+.venv-linux/
+venv/
+*.exe
