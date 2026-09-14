@@ -102,7 +102,33 @@ int main()
 
 void frontBackSplitLinkedList(LinkedList *ll, LinkedList *resultFrontList, LinkedList *resultBackList)
 {
-	/* add your code here */
+	int division;
+	int fr_index = 0;
+	int ba_index = 0;
+	ListNode *tmp = ll->head;
+
+	if (ll==NULL || resultBackList==NULL || resultFrontList==NULL){
+		return ;
+	}
+
+	if (ll->size%2==1){
+		division = (ll->size/2) + 1; 
+	}else{
+		division = ll->size/2;
+	}
+	
+	while (tmp != NULL)
+	{	
+		if(fr_index >= division){
+			insertNode(resultBackList,ba_index,tmp->item);
+			ba_index++;
+		}
+		else{
+			insertNode(resultFrontList,fr_index,tmp->item);
+		}
+		tmp = tmp->next;
+		fr_index++;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

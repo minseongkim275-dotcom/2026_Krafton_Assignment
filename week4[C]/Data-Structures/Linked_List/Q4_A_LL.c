@@ -91,14 +91,14 @@ void moveEvenItemsToBack(LinkedList *ll)
 	}
 	ListNode *cur = ll->head;
 	int count = 0;
-	int iseven = 0;
+	int isodd = 0;
 	while (cur != NULL){
 		if ((cur->item)%2==1) 
 		{	
-			insertNode(ll,iseven,cur->item);
+			insertNode(ll,isodd,cur->item);
 			cur = cur->next;
 			removeNode(ll,count+1);
-			iseven++;
+			isodd++;
 		}
 		else{
 			cur = cur->next;
