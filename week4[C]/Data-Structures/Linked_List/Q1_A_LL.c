@@ -238,7 +238,7 @@ int removeNode(LinkedList *ll, int index){
 
 		cur = pre->next;
 		pre->next = cur->next;
-		free(cur);
+		free(cur); 
 		ll->size--;
 		return 0;
 	}
