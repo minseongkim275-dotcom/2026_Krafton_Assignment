@@ -89,41 +89,53 @@ int main()
 
 int insertSortedLL(LinkedList *ll, int item)
 {
-	ListNode *tmp = ll->head;
-	int index = 0;
-
-	if (ll == NULL)
+	if (ll == NULL){
 		return -1;
+	}
+	
+	ListNode *cur = ll->head;
+	ListNode *node = malloc(sizeof(ListNode));
+	node->next = NULL;
+	node->item = 0;
+	int count = 0;
 
-	while (tmp != NULL && tmp->item < item) {
-		tmp = tmp->next;
-		index++;
+	if(cur == NULL){
+		node->next = ll->head;
+		node->item = item;
+		ll->head = node;
+		return count;
 	}
 
-	if (tmp != NULL && tmp->item == item)
-		return -1;
+	while(cur != NULL && cur->item <item){
+		cur = cur->next;
+		count++;
+	}
 
-	if (insertNode(ll, index, item) != 0)
+	if (cur != NULL && cur->item ==item){
 		return -1;
+	}
 
-	return index;
+	insertNode(ll,count,item);
+	return count;
+
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
 
 void printList(LinkedList *ll){
-
 	ListNode *cur;
-	if (ll == NULL)
+	if(ll == NULL){
 		return;
+	}
 	cur = ll->head;
-
-	if (cur == NULL)
+	if (cur == NULL){
 		printf("Empty");
-	while (cur != NULL)
-	{
-		printf("%d ", cur->item);
-		cur = cur->next;
+	}
+	while(cur != NULL){
+		printf("%d ",cur->item);
+		cur = cur ->next;
 	}
 	printf("\n");
 }

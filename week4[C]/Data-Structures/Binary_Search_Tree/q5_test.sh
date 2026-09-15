@@ -1,17 +1,17 @@
 #!/bin/bash
-# Q6_A_LL.c (moveMaxToFront) 자동 테스트
-# 사용법: ./q6_test.sh        (Q6_A_LL.c 와 같은 폴더에 두고 실행)
-#         DEBUG=1 ./q6_test.sh   (실패 시 프로그램 원본 출력까지 보기)
+# Q5_F_BST.c (postOrderIterativeS2) 자동 테스트
+# 사용법: ./q5_test.sh        (Q5_F_BST.c 와 같은 폴더에 두고 실행)
+#         DEBUG=1 ./q5_test.sh   (실패 시 프로그램 원본 출력까지 보기)
 
 set -u
 cd "$(dirname "$0")" || exit 1
 
-SRC="Q6_A_LL.c"
+SRC="Q5_F_BST.c"
 
-# "The resulting linked list after moving largest stored value to the front of the list is: 70 30 20 40 50"
-PAT='s/.*front of the list is: //p'
+# "The resulting post-order traversal of the binary search tree is: 20 15 50"
+PAT='s/.*binary search tree is: //p'
 
-bin=$(mktemp /tmp/q6test.XXXXXX) || exit 1
+bin=$(mktemp /tmp/q5bst.XXXXXX) || exit 1
 trap 'rm -f "$bin"' EXIT
 
 if [ ! -f "$SRC" ]; then
@@ -28,11 +28,11 @@ pass=0
 fail=0
 
 check() {
-    # check "입력값들" "기대 결과"
-    local a="$1" e="$2"
-    local inp="" x out g status
+    # check "삽입할 값들(공백구분)" "기대 출력"
+    local vals="$1" e="$2"
+    local inp="" v out g status
 
-    for x in $a; do inp+="1\n$x\n"; done
+    for v in $vals; do inp+="1\n$v\n"; done
     inp+="2\n0\n"
 
     out=$(printf '%b' "$inp" | timeout 5 "$bin" 2>&1)
@@ -42,10 +42,10 @@ check() {
 
     if [ "$status" -eq 0 ] && [ "$g" = "$e" ]; then
         pass=$((pass + 1))
-        printf '  OK    ll=[%s]\n' "$a"
+        printf '  OK    삽입=[%s]\n' "$vals"
     else
         fail=$((fail + 1))
-        printf '  FAIL  ll=[%s]\n' "$a"
+        printf '  FAIL  삽입=[%s]\n' "$vals"
         printf '          나온것: [%s]\n' "$g"
         printf '          기대값: [%s]\n' "$e"
 
@@ -63,23 +63,16 @@ check() {
     fi
 }
 
-E="Empty"
-
 echo
-check "30 20 40 70 50" "70 30 20 40 50"
-check "1 2 3"          "3 1 2"
-check "5"              "5"
-check "7 3 9 4 2"      "9 7 3 4 2"
-check "10 20 5 3"      "20 10 5 3"
-check "-5 -1 -10"      "-1 -5 -10"
-# 최댓값이 이미 맨 앞인 경우 (pre/maxNode 미초기화 버그 탐지)
-check "30 20 10"       "30 20 10"
-check "50 10 20 30"    "50 10 20 30"
-check ""               "$E"
-
+check "20 15 50 10 18 25 80"    "10 18 15 25 80 50 20"
+check "50 30 70 20 40 60 80"    "20 40 30 60 80 70 50"
+check "8 3 10 1 6 14 4 7 13"    "1 4 7 6 3 13 14 10 8"
+check "1 2 3 4 5"               "5 4 3 2 1"
+check "5 4 3 2 1"               "1 2 3 4 5"
+check "42"                      "42"
+check ""                        ""
 
 echo
 echo "  통과 $pass / 실패 $fail"
-
 echo
 [ "$fail" -eq 0 ]

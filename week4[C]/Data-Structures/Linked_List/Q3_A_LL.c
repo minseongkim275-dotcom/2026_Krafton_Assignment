@@ -104,8 +104,6 @@ void moveOddItemsToBack(LinkedList *ll)
 			cur = cur->next;
 		}
 		count++;
-		
-		
 		}
 
 }
