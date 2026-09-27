@@ -49,6 +49,7 @@ static void parse_headers(char *text, Headers *h) {
     for (char *line = strtok(text, "\n"); line != NULL; line = strtok(NULL, "\n")) {
         char *colon = strchr(line, ':');   
 
+        """colon에서 ':'가 없으면 NULL을 반환하기 때문에 if문을 통해서 조건을 걸어둔다."""
         if (colon == NULL){
             continue;
         }

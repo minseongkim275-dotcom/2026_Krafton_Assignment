@@ -61,6 +61,10 @@ static void split_lines(LineView *out, char *text) {
     for (char *ln = strtok(text, "\n"); ln && n < MAX_LINES; ln = strtok(NULL, "\n"))
         parts[n++] = ln;
 
+    for (int i = 0; i < n; i++){
+        char b = parts[i];
+        parts[i] = &b;
+    }
     view_set(out, parts, n);      
 
     /* TODO 상기 코드를 수정하여 결과를 호출자가 준 out 에 직접 채운다(값 반환 아님, 지역 주소 반환 아님). */       
