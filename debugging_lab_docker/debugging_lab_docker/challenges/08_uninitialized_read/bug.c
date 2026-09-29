@@ -86,7 +86,7 @@ static int **make_matrix(void) {
 
 static long row_sum(int **rows, int nrows) {
     long total = 0;
-    for (int i = 0; i < nrows; i++) {
+    for (int i = 0; i < nrows; i+=2) {
         for (int j = 0; j < COLS; j++) {
             total += rows[i][j];      
         }
