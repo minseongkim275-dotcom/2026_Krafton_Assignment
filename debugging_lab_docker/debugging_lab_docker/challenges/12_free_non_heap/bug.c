@@ -78,9 +78,7 @@ static void row_print(const Row *r) {
 }
 
 static void row_free(Row *r) {
-    for (int i = 0; i < r->n; i++) {
-        free(r->fields[i]);       
-    }
+    free(r->base);       
     r->n = 0;
 }
 
