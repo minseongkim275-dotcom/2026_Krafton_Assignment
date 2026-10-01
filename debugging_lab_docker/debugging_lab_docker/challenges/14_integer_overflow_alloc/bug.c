@@ -49,27 +49,38 @@ typedef struct {
     int width;
     int height;
     int channels;
-    int nbytes;              
+    size_t nbytes;              
     unsigned char *px;
 } Image;
 
+static int mul_size(size_t a, size_t b, size_t *out) {
+    if (b != 0 && a > SIZE_MAX / b) return 1;
+    *out = a * b;
+    return 0;
+}
+
 static Image *image_new(int width, int height, int channels) {
+    if (width <= 0 || height <= 0 || channels <= 0) return NULL;
+
+    size_t px, nbytes;
+    if (mul_size((size_t)width, (size_t)height, &px) ||
+        mul_size(px, (size_t)channels, &nbytes))
+        return NULL;
+
     Image *img = malloc(sizeof *img);
     if (!img) { perror("malloc"); exit(1); }
+    img->px = malloc(nbytes);
+    if (!img->px) { free(img); return NULL; }  
+
     img->width = width;
     img->height = height;
     img->channels = channels;
-
-    img->nbytes = width * height * channels;
-    img->px = malloc((size_t)img->nbytes);     
-    if (!img->px) { perror("malloc px"); exit(1); }
+    img->nbytes = nbytes;
     return img;
 }
 
 static void image_fill(Image *img, unsigned char value) {
-
-    size_t total = (size_t)img->width * (size_t)img->height * (size_t)img->channels;
-    for (size_t i = 0; i < total; i++) {
+    for (size_t i = 0; i < img->nbytes; i++) {
         img->px[i] = value;                     
     }
 }
@@ -87,7 +98,11 @@ int main(void) {
      *               일 때가 3(RGB)일 때보다 오버플로가 더 쉽게 터질까?
      *               (해결 힌트: 크기 계산을 size_t 로 승격하고, 곱셈 오버플로를 검사한다) */
     Image *img = image_new(65536, 65536, 4);
-    printf("allocated nbytes(int)=%d for %dx%d x%d\n",
+     if (!img) {                                         // ⑤ 실패를 정상적으로 처리
+        fprintf(stderr, "image_new failed: size overflow or out of memory\n");
+        return 0;
+    }
+    printf("allocated nbytes=%zu for %dx%d x%d\n",      // ⑥ %d → %zu
            img->nbytes, img->width, img->height, img->channels);
 
     image_fill(img, 0xFF);                       
