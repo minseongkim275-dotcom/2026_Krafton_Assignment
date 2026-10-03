@@ -18,6 +18,28 @@
 #include "mm.h"
 #include "memlib.h"
 
+/*==============================================*/
+#define WSIZE 4
+#define DSIZE 8
+#define CHUNKSIZE (1<<12)
+
+#define MAX(x,y)
+#define PACK(size,alloc)
+
+#define GET(p)
+#define PUT(p, val)
+
+#define GET_SIZE(p)
+#define GET_ALLOC(p)
+
+#define HDRP(bp)
+#define FTRP(bp)
+
+#define NEXT_BLKP(bp)
+#define PREV_BLKP(bp)
+
+char *heap_listp;
+/*==============================================*/
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
  * provide your team information in the following struct.
@@ -47,7 +69,35 @@ team_t team = {
  */
 int mm_init(void)
 {
+    if((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
+        return -1;
+    PUT(heap_listp, 0);
+    PUT(heap_listp + (1*WSIZE), PACK(DSIZE,1));
+    PUT(heap_listp + (2*WSIZE), PACK(DSIZE,1));
+    PUT(heap_listp + (3*WSIZE), PACK(0,1));
+    heap_listp += (2*WSIZE);
+
+    if(extend_heap(CHUNKSIZE/WSIZE) == NULL)
+        return -1;
     return 0;
+
+}
+
+static void *extend_heap(size_t words)
+{
+    char *bp;
+    size_t size;
+
+    size = (words % 2) ? (words+1)*WSIZE : words * WSIZE;
+    /* 왜 나머지 연산을 진행하냐 짝수가 아니면 더했을때 8배수로 안맞춰지기 때문에
+    패딩을 넣어주는 작업입니다. */
+    if ((long)(bp = mem_sbrk(size)) == -1)
+        return NULL;
+    PUT(HDRP(bp),PACK(size,0));
+    PUT(FTRP(bp),PACK(size,0));
+    PUT(HDRP(NEXT_BLKP(bp)),PACK(0,1));
+
+    return coalesce(bp);
 }
 
 /*
@@ -72,6 +122,11 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *ptr)
 {
+    size_t size = GET_SIZE(HDRP(bp));
+
+    PUT(HDRP(bp), PACK(size,0));
+    PUT(FTRP(bp), PACK(size,0));
+    coalesce(bp);
 }
 
 /*
