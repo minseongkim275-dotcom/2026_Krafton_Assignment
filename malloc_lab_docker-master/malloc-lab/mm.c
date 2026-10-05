@@ -23,22 +23,27 @@
 #define DSIZE 8
 #define CHUNKSIZE (1<<12)
 
-#define MAX(x,y)
-#define PACK(size,alloc)
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define PACK(size,alloc) ((size) | (alloc))
 
-#define GET(p)
-#define PUT(p, val)
+#define GET(p) (*(unsigned int *)(p))
+#define PUT(p, val) (*(unsigned int *)(p) = (val))
 
-#define GET_SIZE(p)
-#define GET_ALLOC(p)
+#define GET_SIZE(p) (GET(p) & ~0x7)
+#define GET_ALLOC(p) (GET(p) & 0x1)
 
-#define HDRP(bp)
-#define FTRP(bp)
+#define HDRP(bp) ((char *)(bp) - WSIZE)
+#define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp))- DSIZE)
 
-#define NEXT_BLKP(bp)
-#define PREV_BLKP(bp)
+#define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
+#define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
-char *heap_listp;
+static char *heap_listp;
+
+static void *extend_heap(size_t words);
+static void *coalesce(void *bp);
+static void *find_fit(size_t asize);
+static void place(void *bp, size_t asize);
 /*==============================================*/
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
@@ -132,17 +137,38 @@ void *mm_malloc(size_t size)
 }
 
 static void *find_fit(size_t asize){
-
+    char *bp;
+    bp = heap_listp;
+    while (!(GET_ALLOC(HDRP(bp)) == 1 && GET_SIZE(HDRP(bp)) == 0))
+        if (GET_ALLOC(HDRP(bp)) == 0)    
+            if (asize <= GET_SIZE(HDRP(bp)))
+                    return bp;
+                else
+                    bp = NEXT_BLKP(bp);
+        else
+            bp = NEXT_BLKP(bp);
+    return NULL;
 }
 
 static void place(void *bp, size_t asize){
-    
+    int num = GET_SIZE(HDRP(bp)) - asize;
+    char *new_bp;
+    PUT(HDRP(bp),PACK(GET_SIZE(HDRP(bp)),1));
+    PUT(FTRP(bp),PACK(GET_SIZE(HDRP(bp)),1));
+    if (num >= DSIZE){
+        PUT(FTRP(bp),PACK(num ,0));
+        PUT(FTRP(bp) - num + WSIZE, PACK(num,0));
+        new_bp = FTRP(bp) - num;
+        PUT(new_bp,PACK(asize,1));
+        PUT(HDRP(bp),PACK(asize,1));
+        coalesce(new_bp + DSIZE);
+        }
 }
 
 /*
  * mm_free - Freeing a block does nothing.
  */
-void mm_free(void *ptr)
+void mm_free(void *bp)
 {
     size_t size = GET_SIZE(HDRP(bp));
 
@@ -196,7 +222,7 @@ void *mm_realloc(void *ptr, size_t size)
     newptr = mm_malloc(size);
     if (newptr == NULL)
         return NULL;
-    copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
+    copySize = GET_SIZE(HDRP(oldptr)) - DSIZE;   /* 블록 크기 - 헤더·풋터 = 페이로드 크기 */
     if (size < copySize)
         copySize = size;
     memcpy(newptr, oldptr, copySize);
