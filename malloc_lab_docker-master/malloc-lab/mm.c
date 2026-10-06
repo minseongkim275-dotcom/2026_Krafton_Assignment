@@ -38,8 +38,14 @@
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
-static char *heap_listp;
+#define PRED(bp) *(char**)(bp)
+#define SUCC(bp) *(char**)((char*)(bp) + DSIZE)
 
+static char *heap_listp;
+static char *free_listp;
+
+static void insert_free(void *bp);
+static void remove_free(void *bp);
 static void *extend_heap(size_t words);
 static void *coalesce(void *bp);
 static void *find_fit(size_t asize);
@@ -81,6 +87,7 @@ int mm_init(void)
     PUT(heap_listp + (2*WSIZE), PACK(DSIZE,1));
     PUT(heap_listp + (3*WSIZE), PACK(0,1));
     heap_listp += (2*WSIZE);
+    free_listp = NULL;
 
     if(extend_heap(CHUNKSIZE/WSIZE) == NULL)
         return -1;
@@ -119,9 +126,9 @@ void *mm_malloc(size_t size)
         return NULL;
     
     if (size <= DSIZE)
-        asize = 2*DSIZE;
+        asize = 3*DSIZE; /*기본이 24이지만 애초에 주소를 덮어서 데이터가 들어갈수있기때문에 상관없음*/
     else
-        asize = DSIZE * ((size + (DSIZE)+(DSIZE-1)) / DSIZE );
+        asize = DSIZE * ((size + (DSIZE)+(DSIZE-1)) / DSIZE ); /*if 9라고 가정하면 패딩때문에 16을 줘야하며 헤더와 풋터가 4바이트인 8바이트 즉 24가 되야한다. 애초에 넘기면 24부터여서 바꿀필요가 업음*/
 
     if ((bp = find_fit(asize)) != NULL){
         place(bp,asize);
@@ -138,15 +145,12 @@ void *mm_malloc(size_t size)
 
 static void *find_fit(size_t asize){
     char *bp;
-    bp = heap_listp;
-    while (!(GET_ALLOC(HDRP(bp)) == 1 && GET_SIZE(HDRP(bp)) == 0))
-        if (GET_ALLOC(HDRP(bp)) == 0)    
+    bp = free_listp;
+    while (!(bp == NULL)) 
             if (asize <= GET_SIZE(HDRP(bp)))
                     return bp;
                 else
-                    bp = NEXT_BLKP(bp);
-        else
-            bp = NEXT_BLKP(bp);
+                    bp = SUCC(bp);
     return NULL;
 }
 
@@ -155,14 +159,15 @@ static void place(void *bp, size_t asize){
     char *new_bp;
     PUT(HDRP(bp),PACK(GET_SIZE(HDRP(bp)),1));
     PUT(FTRP(bp),PACK(GET_SIZE(HDRP(bp)),1));
-    if (num >= DSIZE){
+    remove_free(bp);
+    if (num >= 3*DSIZE){
         PUT(FTRP(bp),PACK(num ,0));
         PUT(FTRP(bp) - num + WSIZE, PACK(num,0));
         new_bp = FTRP(bp) - num;
         PUT(new_bp,PACK(asize,1));
         PUT(HDRP(bp),PACK(asize,1));
         coalesce(new_bp + DSIZE);
-        }
+    }
 }
 
 /*
@@ -183,11 +188,12 @@ static void *coalesce(void *bp){
     size_t size = GET_SIZE(HDRP(bp));
 
     if (prev_alloc && next_alloc){
-        return bp;
+        // return bp;
     }
 
     else if (prev_alloc && !next_alloc){
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
+        remove_free(NEXT_BLKP(bp));
         PUT(HDRP(bp), PACK(size,0));
         PUT(FTRP(bp), PACK(size,0));
     }
@@ -196,6 +202,7 @@ static void *coalesce(void *bp){
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         PUT(FTRP(bp), PACK(size,0));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size,0));
+        remove_free(PREV_BLKP(bp));
         bp = PREV_BLKP(bp);
     }
     
@@ -203,12 +210,43 @@ static void *coalesce(void *bp){
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(PREV_BLKP(bp)),PACK(size,0));
         PUT(FTRP(NEXT_BLKP(bp)),PACK(size,0));
+        remove_free(NEXT_BLKP(bp));
+        remove_free(PREV_BLKP(bp));
         bp = PREV_BLKP(bp);
     
     }
+    insert_free(bp);
     return bp;
 }
 
+static void insert_free(void *bp){
+    if(free_listp == NULL){
+        PRED(bp) = NULL;
+        SUCC(bp) = NULL;
+        free_listp = bp;
+    }
+    else{
+        PRED(bp) = NULL;
+        SUCC(bp) = free_listp;   
+        PRED(free_listp) = bp;
+        free_listp = bp;              
+    }
+}
+
+static void remove_free(void *bp){
+    if(PRED(bp) == NULL && SUCC(bp) == NULL){
+        free_listp = NULL;
+    }else if (PRED(bp) == NULL){
+        PRED(SUCC(bp)) = NULL;              
+        free_listp = SUCC(bp);         
+    }else if (SUCC(bp) == NULL){
+        SUCC(PRED(bp)) = NULL;
+    }else{
+        PRED(SUCC(bp)) = PRED(bp);          
+        SUCC(PRED(bp)) = SUCC(bp);          
+    }
+
+}
 
 /*
  * mm_realloc - Implemented simply in terms of mm_malloc and mm_free
