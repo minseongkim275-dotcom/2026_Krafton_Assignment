@@ -1,14 +1,3 @@
-/*
- * mm-naive.c - The fastest, least memory-efficient malloc package.
- *
- * In this naive approach, a block is allocated by simply incrementing
- * the brk pointer.  A block is pure payload. There are no headers or
- * footers.  Blocks are never coalesced or reused. Realloc is
- * implemented directly using mm_malloc and mm_free.
- *
- * NOTE TO STUDENTS: Replace this header comment with your own header
- * comment that gives a high level description of your solution.
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -124,7 +113,7 @@ void *mm_malloc(size_t size)
 
     if (size == 0)
         return NULL;
-    
+
     if (size <= DSIZE)
         asize = 3*DSIZE; /*기본이 24이지만 애초에 주소를 덮어서 데이터가 들어갈수있기때문에 상관없음*/
     else
@@ -145,13 +134,18 @@ void *mm_malloc(size_t size)
 
 static void *find_fit(size_t asize){
     char *bp;
-    bp = free_listp;
-    while (!(bp == NULL)) 
-            if (asize <= GET_SIZE(HDRP(bp)))
-                    return bp;
-                else
-                    bp = SUCC(bp);
-    return NULL;
+    char *best = NULL;
+
+    for (bp = free_listp; bp != NULL; bp = SUCC(bp)) {
+        size_t bsize = GET_SIZE(HDRP(bp));
+        if (bsize < asize)         
+            continue;
+        if (bsize == asize)         
+            return bp;
+        if (best == NULL || bsize < GET_SIZE(HDRP(best)))
+            best = bp;             
+    }
+    return best;           
 }
 
 static void place(void *bp, size_t asize){
@@ -205,7 +199,7 @@ static void *coalesce(void *bp){
         remove_free(PREV_BLKP(bp));
         bp = PREV_BLKP(bp);
     }
-    
+
     else if (!prev_alloc && !next_alloc){
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(PREV_BLKP(bp)),PACK(size,0));
@@ -213,7 +207,7 @@ static void *coalesce(void *bp){
         remove_free(NEXT_BLKP(bp));
         remove_free(PREV_BLKP(bp));
         bp = PREV_BLKP(bp);
-    
+
     }
     insert_free(bp);
     return bp;
@@ -226,10 +220,14 @@ static void insert_free(void *bp){
         free_listp = bp;
     }
     else{
+
+
+
+
         PRED(bp) = NULL;
-        SUCC(bp) = free_listp;   
+        SUCC(bp) = free_listp;
         PRED(free_listp) = bp;
-        free_listp = bp;              
+        free_listp = bp;
     }
 }
 
@@ -237,13 +235,13 @@ static void remove_free(void *bp){
     if(PRED(bp) == NULL && SUCC(bp) == NULL){
         free_listp = NULL;
     }else if (PRED(bp) == NULL){
-        PRED(SUCC(bp)) = NULL;              
-        free_listp = SUCC(bp);         
+        PRED(SUCC(bp)) = NULL;
+        free_listp = SUCC(bp);
     }else if (SUCC(bp) == NULL){
         SUCC(PRED(bp)) = NULL;
     }else{
-        PRED(SUCC(bp)) = PRED(bp);          
-        SUCC(PRED(bp)) = SUCC(bp);          
+        PRED(SUCC(bp)) = PRED(bp);
+        SUCC(PRED(bp)) = SUCC(bp);
     }
 
 }
@@ -255,14 +253,54 @@ void *mm_realloc(void *ptr, size_t size)
 {
     void *oldptr = ptr;
     void *newptr;
+    char *bp;
     size_t copySize;
+    size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(oldptr)));
+    size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(oldptr)));
+    size_t sizes = GET_SIZE(HDRP(oldptr));
 
+    copySize = GET_SIZE(HDRP(oldptr)) - DSIZE;
+    if (size < copySize)
+        copySize = size;
+    if(GET_SIZE(HDRP(oldptr)) - DSIZE >= size){
+        return oldptr;
+    }
+    if (prev_alloc && next_alloc){
+    }
+
+    else if (prev_alloc && !next_alloc){
+        sizes += GET_SIZE(HDRP(NEXT_BLKP(oldptr)));
+    }
+
+    else if (!prev_alloc && next_alloc){
+        sizes += GET_SIZE(HDRP(PREV_BLKP(oldptr)));
+    }
+
+    else if (!prev_alloc && !next_alloc){
+        sizes += GET_SIZE(HDRP(PREV_BLKP(oldptr))) + GET_SIZE(HDRP(NEXT_BLKP(oldptr)));
+    }
+    if ((sizes - DSIZE >= size)){
+        if (prev_alloc && next_alloc){
+            return oldptr;
+        }else if(prev_alloc && !next_alloc){
+            remove_free(NEXT_BLKP(oldptr));
+
+            PUT(HDRP(oldptr),PACK(sizes,1));
+            PUT(FTRP(oldptr),PACK(sizes,1));
+            return oldptr;
+
+        }else{
+            bp = coalesce(oldptr);
+            remove_free(bp);
+            PUT(HDRP(bp),PACK(GET_SIZE(HDRP(bp)),1));
+            PUT(FTRP(bp),PACK(GET_SIZE(HDRP(bp)),1));
+            memmove(bp,oldptr,copySize);
+            return bp;
+        }
+    }
     newptr = mm_malloc(size);
     if (newptr == NULL)
         return NULL;
-    copySize = GET_SIZE(HDRP(oldptr)) - DSIZE;   /* 블록 크기 - 헤더·풋터 = 페이로드 크기 */
-    if (size < copySize)
-        copySize = size;
     memcpy(newptr, oldptr, copySize);
     mm_free(oldptr);
     return newptr;
