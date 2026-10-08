@@ -220,10 +220,6 @@ static void insert_free(void *bp){
         free_listp = bp;
     }
     else{
-
-
-
-
         PRED(bp) = NULL;
         SUCC(bp) = free_listp;
         PRED(free_listp) = bp;
@@ -284,7 +280,6 @@ void *mm_realloc(void *ptr, size_t size)
             return oldptr;
         }else if(prev_alloc && !next_alloc){
             remove_free(NEXT_BLKP(oldptr));
-
             PUT(HDRP(oldptr),PACK(sizes,1));
             PUT(FTRP(oldptr),PACK(sizes,1));
             return oldptr;
